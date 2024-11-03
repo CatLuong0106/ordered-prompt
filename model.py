@@ -1,15 +1,24 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import os
 from tqdm import tqdm
 from transformers import GPT2LMHeadModel, GPT2Tokenizer, GPT2Model
+from transformers import LlamaForCausalLM, PreTrainedTokenizerFast, AutoModelForCausalLM, AutoTokenizer
+from dotenv import load_dotenv
 
+load_dotenv()
+hf_token = os.getenv("HF_TOKEN")
+base_model = "meta-llama/Llama-3.2-1B-Instruct"
 
 class ImmutableLM(nn.Module):
     def __init__(self, model_path):
         super(ImmutableLM, self).__init__()
-        self.backbone = GPT2LMHeadModel.from_pretrained(model_path)
-        self.tokenizer = GPT2Tokenizer.from_pretrained(model_path)
+        # self.backbone = GPT2LMHeadModel.from_pretrained(model_path)
+        # self.tokenizer = GPT2Tokenizer.from_pretrained(model_path)
+        # self.backbone_name = model_path
+        self.backbone = AutoModelForCausalLM.from_pretrained(model_path) 
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, max_length=1024, truncation=True, torch_dtype=torch.float16)
         self.backbone_name = model_path
 
     def get_restricted_token_probability(self, logits, restricted_token, label_length=1, normalize=False):
@@ -299,6 +308,7 @@ class ImmutableLM(nn.Module):
 
 
 if __name__ == "__main__":
-    lm = ImmutableLM(model_path='distilgpt2')
+    # lm = ImmutableLM(model_path='distilgpt2')
+    lm = ImmutableLM(model_path=base_model)
 
 

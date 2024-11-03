@@ -22,10 +22,13 @@ from utils import dynamic_batching
 import debugger
 
 logger = logging.getLogger(__name__)
-
+model_name = "meta-llama/Llama-3.2-1B-Instruct"
+# torch.cuda.set_per_process_memory_fraction(1.0)
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"  
 
 def init_model(args):
-    model = ImmutableLM(args.model)
+    # model = ImmutableLM(args.model)
+    model = ImmutableLM(model_name)
     if torch.cuda.is_available():
         model.cuda()
     return model
@@ -73,7 +76,7 @@ def main(corpus_config, args):
     print(cfg)
     corpus = PromptCorpus(**cfg)
 
-    corpus_config["model"] = args.model
+    corpus_config["model"] = model_name
     corpus_config["temperature"] = args.temperature
     corpus_config["do_sample"] = args.do_sample
     corpus_config["topk"] = args.topk
@@ -89,10 +92,10 @@ def main(corpus_config, args):
 
     if args.generate:
         result = generation_mode(model=model, dataset=dataset, args=args, config=cfg)
-        dump_fname = f"generate_{args.ngram}gram_{cfg_fname}_{cfg.n_shot}_shot_{args.model}_seed{args.seed}_{cfg.sample_mode}_temperature{args.temperature}_top{args.topk}_hash{cfg_hash_str}.pkl"
+        dump_fname = f"generate_{args.ngram}gram_{cfg_fname}_{cfg.n_shot}_shot_{model_name}_seed{args.seed}_{cfg.sample_mode}_temperature{args.temperature}_top{args.topk}_hash{cfg_hash_str}.pkl"
     else:
         result = inference_mode(model=model, dataset=dataset, restricted_token=corpus.restricted_token)
-        dump_fname = f"{cfg_fname}_{cfg.n_shot}_shot_{args.model}_seed{args.seed}_{cfg.sample_mode}_hash{cfg_hash_str}.pkl"
+        dump_fname = f"{cfg_fname}_{cfg.n_shot}_shot_{model_name}_seed{args.seed}_{cfg.sample_mode}_hash{cfg_hash_str}.pkl"
 
     output_ckpt = {"result": result, "config": corpus_config}
     pickle.dump(output_ckpt,
@@ -111,7 +114,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--generate", action="store_true")
     parser.add_argument("--ngram", type=int, default=0)
-    parser.add_argument("--max_generation_length", "-l", type=int, default=128)
+    parser.add_argument("--max_generation_length", "-l", type=int, default=64)
     parser.add_argument("--temperature", "-t", type=float, default=1.0)
     parser.add_argument("--do_sample", action="store_true")
     parser.add_argument("--topk", type=int, default=-1)

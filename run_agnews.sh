@@ -10,9 +10,9 @@ mkdir -p $LOGDIR
 for NSHOT in 4;
 do
 
-for MODEL in gpt2 gpt2-medium gpt2-large gpt2-xl;
+for MODEL in llama; #gpt2-medium gpt2-large gpt2-xl;
 do
-for SEED in 1 2 3 4 5;
+for SEED in 1 2; # 3 4 5;
 do
 
   for N in 3 5;
