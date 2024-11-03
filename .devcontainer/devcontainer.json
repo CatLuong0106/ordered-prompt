@@ -1,0 +1,24 @@
+{
+    "name": "Ordered Prompt- CUDA 12.3 Container",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:3.10",
+    "features": {
+            "ghcr.io/devcontainers/features/nvidia-cuda:1": {
+                    "cudaVersion": "12.4"
+            }
+    },
+    "runArgs": [
+            "--gpus", "all"
+    ],
+
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "customizations": {
+            "vscode": {
+                    "extensions": [
+                            "GitHub.copilot",
+                            "ms-python.vscode-pylance",
+                            "ms-python.python",
+                            "ms-toolsai.jupyter"
+                    ]
+            }
+    }
+}
