@@ -26,6 +26,7 @@ def selection(fn_gen, fn_true, topk=4):
     permutation_max_size = len(data_gen['result'][0]['prompt_sequence_text']) #data_gen['config']['permutation_max_size']
     # print(label_mapping)
     prediction_texts = list(zip(*[elem['prediction_text'].split() for elem in data_gen['result']]))
+    print("Prediction Texts :", prediction_texts)
     all_labels = list(label_mapping.keys())
     all_labels.sort()
 

@@ -1,0 +1,16 @@
+sympy==1.9
+tensorboard==2.17.1
+tensorboard-data-server==0.7.2
+tensorflow==2.17.0
+# torch==2.0.1
+tqdm==4.66.6
+torch==2.1.0
+# transformers==4.46.1
+transformers==4.40.0
+scikit-learn
+ipython
+easydicthu
+python-dotenv
+sentencepiece
+bitsandbytes
+accelerate

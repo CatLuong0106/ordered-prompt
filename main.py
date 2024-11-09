@@ -22,15 +22,21 @@ from utils import dynamic_batching
 import debugger
 
 logger = logging.getLogger(__name__)
-model_name = "meta-llama/Llama-3.2-1B-Instruct"
+# model_name = "meta-llama/Llama-2-7b-hf"
+# model_name = "meta-llama/Llama-3.2-1B-Instruct"
+# model_name = "bartowski/Llama-3.2-3B-Instruct-GGUF"
 # torch.cuda.set_per_process_memory_fraction(1.0)
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"  
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128" 
 
 def init_model(args):
-    # model = ImmutableLM(args.model)
+    if args.model == "llama3": 
+        model_name = "meta-llama/Llama-3.2-1B-Instruct"
     model = ImmutableLM(model_name)
+    # model = ImmutableLM(model_name)
+    # model = ImmutableLM(model_name)
     if torch.cuda.is_available():
-        model.cuda()
+        model = model.to('cuda', non_blocking=True)
+
     return model
 
 def inference_mode(model: ImmutableLM, dataset: DataLoader, restricted_token):
@@ -50,6 +56,7 @@ def generation_mode(model: ImmutableLM, dataset: DataLoader, config: easydict.Ea
     allowed_tokens = tuple(model.tokenizer.encode(allowed_text))
     print(f"allowed tokens {model.tokenizer.decode(allowed_tokens)}")
 
+    torch.cuda.empty_cache()  # Clear cache before generation
     data = iter(dataset).__next__()
     with torch.no_grad():
         model.eval()
@@ -61,6 +68,8 @@ def generation_mode(model: ImmutableLM, dataset: DataLoader, config: easydict.Ea
             prefix=config.template[2:].split("{")[0],
             temperature=args.temperature, do_sample=args.do_sample, top_k=args.topk)
         result = output
+        torch.cuda.empty_cache()
+
 
     return result
 
@@ -75,8 +84,9 @@ def main(corpus_config, args):
     cfg = easydict.EasyDict(corpus_config)
     print(cfg)
     corpus = PromptCorpus(**cfg)
-
-    corpus_config["model"] = model_name
+    
+    corpus_config['model'] = args.model
+    # corpus_config["model"] = model_name
     corpus_config["temperature"] = args.temperature
     corpus_config["do_sample"] = args.do_sample
     corpus_config["topk"] = args.topk
@@ -89,13 +99,19 @@ def main(corpus_config, args):
 
     cfg_fname = os.path.split(args.config)[-1].replace(".yaml", "")
     cfg_hash_str = get_config_hash(cfg)
-
-    if args.generate:
-        result = generation_mode(model=model, dataset=dataset, args=args, config=cfg)
-        dump_fname = f"generate_{args.ngram}gram_{cfg_fname}_{cfg.n_shot}_shot_{model_name}_seed{args.seed}_{cfg.sample_mode}_temperature{args.temperature}_top{args.topk}_hash{cfg_hash_str}.pkl"
-    else:
-        result = inference_mode(model=model, dataset=dataset, restricted_token=corpus.restricted_token)
-        dump_fname = f"{cfg_fname}_{cfg.n_shot}_shot_{model_name}_seed{args.seed}_{cfg.sample_mode}_hash{cfg_hash_str}.pkl"
+    try: 
+        if args.generate:
+            result = generation_mode(model=model, dataset=dataset, args=args, config=cfg)
+            dump_fname = f"generate_{args.ngram}gram_{cfg_fname}_{cfg.n_shot}_shot_{args.model}_seed{args.seed}_{cfg.sample_mode}_temperature{args.temperature}_top{args.topk}_hash{cfg_hash_str}.pkl"
+        else:
+            result = inference_mode(model=model, dataset=dataset, restricted_token=corpus.restricted_token)
+            dump_fname = f"{cfg_fname}_{cfg.n_shot}_shot_{args.model}_seed{args.seed}_{cfg.sample_mode}_hash{cfg_hash_str}.pkl"
+    finally:
+        # Clean up GPU memory
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            del model
+            torch.cuda.empty_cache()
 
     output_ckpt = {"result": result, "config": corpus_config}
     pickle.dump(output_ckpt,
@@ -114,7 +130,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--generate", action="store_true")
     parser.add_argument("--ngram", type=int, default=0)
-    parser.add_argument("--max_generation_length", "-l", type=int, default=64)
+    parser.add_argument("--max_generation_length", "-l", type=int, default=128)
     parser.add_argument("--temperature", "-t", type=float, default=1.0)
     parser.add_argument("--do_sample", action="store_true")
     parser.add_argument("--topk", type=int, default=-1)

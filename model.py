@@ -2,14 +2,16 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
+import bitsandbytes as bnb
 from tqdm import tqdm
 from transformers import GPT2LMHeadModel, GPT2Tokenizer, GPT2Model
-from transformers import LlamaForCausalLM, PreTrainedTokenizerFast, AutoModelForCausalLM, AutoTokenizer
+from transformers import LlamaForCausalLM, PreTrainedTokenizerFast, AutoModelForCausalLM, AutoTokenizer, LlamaTokenizer
 from dotenv import load_dotenv
-
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
-base_model = "meta-llama/Llama-3.2-1B-Instruct"
+from torch import bfloat16
+import transformers
+# load_dotenv()
+# hf_token = os.getenv("HF_TOKEN")
+# base_model = "meta-llama/Llama-3.2-1B-Instruct"
 
 class ImmutableLM(nn.Module):
     def __init__(self, model_path):
@@ -17,8 +19,14 @@ class ImmutableLM(nn.Module):
         # self.backbone = GPT2LMHeadModel.from_pretrained(model_path)
         # self.tokenizer = GPT2Tokenizer.from_pretrained(model_path)
         # self.backbone_name = model_path
-        self.backbone = AutoModelForCausalLM.from_pretrained(model_path) 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, max_length=1024, truncation=True, torch_dtype=torch.float16)
+        # bnb_config = transformers.BitsAndBytesConfig(
+        #     load_in_4bit=True,
+        #     bnb_4bit_quant_type='nf4',
+        #     bnb_4bit_use_double_quant=True,
+        #     bnb_4bit_compute_dtype=bfloat16
+        # )
+        self.backbone = AutoModelForCausalLM.from_pretrained(model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, max_length=512, truncation=True, torch_dtype=torch.float16)
         self.backbone_name = model_path
 
     def get_restricted_token_probability(self, logits, restricted_token, label_length=1, normalize=False):
@@ -43,7 +51,7 @@ class ImmutableLM(nn.Module):
             input_sequence = input_sequence.squeeze(0)
         with torch.no_grad():
             # this is a super lazy/ugly implementation for OOM issue, refactor if have time
-            split = (input_sequence.shape[0] > 20) and (self.backbone_name == 'gpt2-xl')
+            split = (input_sequence.shape[0] > 20) and (self.backbone_name == "meta-llama/Llama-3.2-1B-Instruct" or self.backbone_name == 'gpt2-xl')
             if split:
                 logits = []
                 for sub_sequence in torch.split(input_sequence, 6, dim=0):
@@ -141,11 +149,11 @@ class ImmutableLM(nn.Module):
 
         # split = (bsz > 20) and (self.backbone_name in ['gpt2-xl', 'gpt2-large'])
         split = 4
-        if self.backbone_name in ['gpt2-xl', 'gpt2-large']:
+        if self.backbone_name in ['gpt2-xl', 'gpt2-large', "meta-llama/Llama-3.2-1B-Instruct"]:
             split = 2
         else:
             split = 0
-        if input_sequence.shape[1] > 700 and self.backbone_name in ['gpt2-medium', 'gpt2-xl', 'gpt2-large']:
+        if input_sequence.shape[1] > 700 and self.backbone_name in ['gpt2-medium', 'gpt2-xl', 'gpt2-large', "meta-llama/Llama-3.2-1B-Instruct"]:
             split = 1
 
 
@@ -308,7 +316,7 @@ class ImmutableLM(nn.Module):
 
 
 if __name__ == "__main__":
-    # lm = ImmutableLM(model_path='distilgpt2')
-    lm = ImmutableLM(model_path=base_model)
+    lm = ImmutableLM(model_path='distilgpt2')
+    # lm = ImmutableLM(model_path=base_model)
 
 
