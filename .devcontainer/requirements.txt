@@ -9,7 +9,7 @@ torch==2.1.0
 transformers==4.40.0
 scikit-learn
 ipython
-easydicthu
+easydict
 python-dotenv
 sentencepiece
 bitsandbytes

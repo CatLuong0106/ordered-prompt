@@ -8,6 +8,7 @@ import logging
 
 from collections import defaultdict
 from transformers import GPT2Tokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.utils.data import DataLoader
 from model import ImmutableLM
 from tqdm import tqdm
@@ -29,7 +30,7 @@ class PromptCorpus:
                  corpus_params={"sentence_1_string": "", "sentence_2_string": "", "label_string": ""},
                  template="f'Review: {sentence_1}\nSentiment: {label_text}\n\n'",
                  sample_mode="balance", permutation_max_size=24, sentence_pair=False):
-        self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         self.kshot = n_shot
         self.max_sequence_length = 1022
 
@@ -37,7 +38,12 @@ class PromptCorpus:
 
         self.restricted_token = []
         for label_str in self.label_mapping.values():
-            label_index = self.tokenizer.encode(f" {label_str}")
+            print(label_str)
+            if label_str not in self.tokenizer.get_vocab():
+                self.tokenizer.add_tokens([label_str])
+                self.tokenizer.save_pretrained("updated_llama_tokenizer")
+                
+            label_index = self.tokenizer.encode(f" {label_str}", add_special_tokens=False)
             assert len(label_index) == 1, "label should be single token"
             self.restricted_token += label_index
 

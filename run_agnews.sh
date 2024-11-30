@@ -2,7 +2,7 @@
 
 MAIN_DIR=$(pwd)
 DATASET=agnews
-LOGDIR=experiment/$DATASET;
+LOGDIR=/home/luongcn/mystuff/ordered-prompt/experiment/$DATASET;
 SAMPLE_MODE=balance
 
 mkdir -p $LOGDIR
@@ -10,7 +10,7 @@ mkdir -p $LOGDIR
 for NSHOT in 4;
 do
 
-for MODEL in llama3 #gpt2-xl #gpt2 gpt2-medium gpt2-large gpt2-xl;
+for MODEL in gpt2 #gpt2-medium gpt2-large gpt2-xl;
 do
 for SEED in 1;
 do

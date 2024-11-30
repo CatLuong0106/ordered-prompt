@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128" 
 
 def init_model(args):
+    model_name = args.model
     if args.model == "llama3": 
         model_name = "meta-llama/Llama-3.2-1B-Instruct"
     model = ImmutableLM(model_name)

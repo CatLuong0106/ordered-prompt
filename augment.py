@@ -9,6 +9,7 @@ from utils import filter_printable
 import debugger
 
 def augment_data_from_generation(generation_data, cfg, min_length=5):
+    print(generation_data)
     example_reg_str = "(" + cfg.template[2:-1].replace("\\n",'\n').replace("{sentence_1}", ".*?")\
         .replace("{sentence_2}",".*?").replace("{label_text}", ".*?").replace("\n\n", "\n").replace("  ", " ") + ")"
     sentence_1_reg_str = cfg.template[2:-1].replace("\\n",'\n').replace("{sentence_1}"," (.*?)")\

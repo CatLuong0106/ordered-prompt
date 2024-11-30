@@ -26,7 +26,7 @@ class ImmutableLM(nn.Module):
         #     bnb_4bit_compute_dtype=bfloat16
         # )
         self.backbone = AutoModelForCausalLM.from_pretrained(model_path)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, max_length=512, truncation=True, torch_dtype=torch.float16)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path) # max_length=512, truncation=True, torch_dtype=torch.float16)
         self.backbone_name = model_path
 
     def get_restricted_token_probability(self, logits, restricted_token, label_length=1, normalize=False):
